@@ -16,6 +16,7 @@ import Prelude
 import Text.Parsec
 import Text.Parsec.ByteString (parseFromFile)
 import qualified Day1 as Day1 (execute, parseInput)
+import qualified Day2 as Day2 (execute, parseInput)
 
 data AOC w = AOC { 
         day :: w ::: Int <?> "Indicate which day to execute"
@@ -44,4 +45,5 @@ readInput file parser = do
 
 launch :: Int -> String -> IO ()
 launch 1 file = readInput file Day1.parseInput >>= Day1.execute
+launch 2 file = readInput file Day2.parseInput >>= Day2.execute
 launch _ _ = undefined

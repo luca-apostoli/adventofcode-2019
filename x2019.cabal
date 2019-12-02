@@ -17,7 +17,8 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:
-      Day1
+        Day1
+      , Day2
   other-modules:
       Paths_x2019
   hs-source-dirs:
