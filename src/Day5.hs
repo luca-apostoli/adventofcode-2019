@@ -20,8 +20,8 @@ data Instruction = Instruction {
                     , operation :: Operation
                 } deriving (Eq, Show)
 
-
-execute = undefined
+execute :: [Instruction] -> IO ()
+execute = print 
 
 
 parseInput :: Stream s m Char => ParsecT s u m [Instruction]
@@ -29,25 +29,41 @@ parseInput = manyTill instruction eof
 
 instruction :: Stream s m Char => ParsecT s u m Instruction
 instruction = Instruction 
-                <$> parseModes
+                <$> (try (parseModes 3) <|> try (parseModes 2) <|> try (parseModes 1) <|> return [])  
                 <*> parseOperation
-            where
-                parseOpCode = try (string "01") <|> try (string "02") <|> try (string "03") <|> try (string "04") <|> try (string "99") <* char ','
-                parseModes = upto 3 (modes <$> (char '0' <|> char '1')) <* try (lookAhead parseOpCode)
+            where                                                
+                parseModes n = count n (modes <$> (char '0' <|> char '1')) <* try (lookAhead parseOpCode)
+                parseOpCode = try (string "01") <|> try (string "02") <|> try (string "03") <|> try (string "04") <|> try (string "99") <* (char ',' <|> char '\n')
                 parseOperation = do 
-                                    op <- opCode <$> parseOpCode <* char ','
-                                    pos <- option []  manyTill (upto1 digit <* char ',') (try (lookAhead parseOpCode))
-                                    return op pos
-                                    
-                modes '1' = Immediate
-                modes _ = Pointer
+                                    op <- parseOpCode
+                                    readPos <- pos $ posNum op
+                                    return $ opCode op $ map (\x -> read x :: Int) readPos
+                                    where 
+                                        posNum "01" = 3
+                                        posNum "02" = 3
+                                        posNum "03" = 1
+                                        posNum "04" = 1
+                                        posNum _ = 0
+                                                    
+                                        
+                                        
 
-                opCode "01" = Sum
-                opCode "02" = Prod
-                opCode "03" = Input
-                opCode "04" = Output
-                opCode "99" = Halt
-                opCode _ = error "unrecognized"
+pos :: Stream s m Char => Int -> ParsecT s u m [String]
+pos n = count n (many digit <* char ',')
+
+
+modes :: Char -> Mode
+modes '1' = Immediate
+modes _ = Pointer
+
+
+opCode :: String -> [Int] -> Operation
+opCode "01" xs = Sum (xs !! 0) (xs !! 1) (xs !! 2)
+opCode "02" xs = Prod (xs !! 0) (xs !! 1) (xs !! 2)
+opCode "03" xs = Input (xs !! 0)
+opCode "04" xs = Output (xs !! 0)
+opCode "99" _ = Halt
+opCode _ _ = error "unrecognized"
 
 
 
