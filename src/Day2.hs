@@ -25,7 +25,7 @@ findTarget :: Integer -> [Integer] -> (Integer, Integer)
 findTarget target input = let
                              tuples = [(x, y) | x <- [0..99], y <- [0..99]]
                              res = map (\(x, y) -> transformByOpCode 0 $ setup x y input) tuples
-                             found = head $ filter (\x -> target == (genericIndex x 0)) res
+                             found = head $ filter (\x -> target == genericIndex x 0) res
                           in
                              (genericIndex found 1, genericIndex found 2)
 
@@ -73,4 +73,4 @@ replaceNth n newVal (x:xs)
 
 
 parseInput :: Stream s m Char => ParsecT s u m [String]
-parseInput = (many digit) `sepBy` (char ',')
+parseInput = many digit `sepBy` char ','

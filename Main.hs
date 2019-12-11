@@ -1,3 +1,4 @@
+{-# LANGUAGE MonoLocalBinds     #-}
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE FlexibleInstances  #-}
@@ -15,10 +16,10 @@ import System.IO (stderr, hPutStrLn)
 import Prelude
 import Text.Parsec
 import Text.Parsec.ByteString (parseFromFile)
-import qualified Day1 as Day1 (execute, parseInput)
-import qualified Day2 as Day2 (execute, parseInput)
-import qualified Day3 as Day3 (execute, parseInput)
-import qualified Day5 as Day5 (execute, parseInput)
+import qualified Day1 (execute, parseInput)
+import qualified Day2 (execute, parseInput)
+import qualified Day3 (execute, parseInput)
+import qualified Day5 (execute, parseInput, parseInstruction)
 
 data AOC w = AOC { 
         day :: w ::: Int <?> "Indicate which day to execute"
@@ -49,5 +50,8 @@ launch :: Int -> String -> IO ()
 launch 1 file = readInput file Day1.parseInput >>= Day1.execute
 launch 2 file = readInput file Day2.parseInput >>= Day2.execute
 launch 3 file = readInput file Day3.parseInput >>= Day3.execute
-launch 5 file = readInput file Day5.parseInput >>= Day5.execute
+launch 5 file = do
+                input <- readInput file Day5.parseInput 
+                instructions <- readInput file Day5.parseInstruction
+                Day5.execute input instructions
 launch _ _ = undefined
