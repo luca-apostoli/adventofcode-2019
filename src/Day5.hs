@@ -22,15 +22,17 @@ data Instruction = Instruction {
                 } deriving (Eq, Show)
 
 execute :: [Int] -> [Instruction] -> IO ()
-execute s ins = print ins
+execute s ins = do
+                res <- foldM exec s ins
+                print res
 
 
-exec :: Instruction -> [Int] -> IO [Int]
-exec (Instruction m o@Sum{}) = execSum m o
-exec (Instruction m o@Prod{}) = execProd m o
-exec (Instruction m o@Input{}) = execInput m o
-exec (Instruction m o@Output{}) = execOutput m o
-exec _ = return
+exec :: [Int] -> Instruction -> IO [Int]
+exec xs (Instruction m o@Sum{}) = execSum m o xs
+exec xs (Instruction m o@Prod{}) = execProd m o xs
+exec xs (Instruction m o@Input{}) = execInput m o xs
+exec xs (Instruction m o@Output{}) = execOutput m o xs
+exec xs _ = return xs
 
 
 execSum :: [Mode] -> Operation -> [Int] -> IO [Int]
@@ -74,7 +76,7 @@ setValue n newVal (x:xs)
 
 
 parseInput :: Stream s m Char => ParsecT s u m [Int]
-parseInput = map (read :: String -> Int) <$> many digit `sepBy` char ','
+parseInput = map (read :: String -> Int) <$> ((:) <$> option '0' (char '-') <*> many digit) `sepBy` char ','
 
 parseInstruction :: Stream s m Char => ParsecT s u m [Instruction]
 parseInstruction = manyTill instruction eof
@@ -84,25 +86,25 @@ instruction = Instruction
                 <$> (try (parseModes 3) <|> try (parseModes 2) <|> try (parseModes 1) <|> return [])  
                 <*> parseOperation
             where                                                
-                parseModes n = count n (modes <$> (char '0' <|> char '1')) <* try (lookAhead parseOpCode)
-                parseOpCode = try (string "01") <|> try (string "02") <|> try (string "03") <|> try (string "04") <|> try (string "99") <* option ',' (char ',' <|> char '\n')
+                parseModes n = count n (modes <$> (char '0' <|> char '1')) <* try (char '0' *> lookAhead parseOpCode)
+                parseOpCode = try (string "1") <|> try (string "2") <|> try (string "3") <|> try (string "4") <|> try (string "99") <* option ',' (char ',' <|> char '\n')
                 parseOperation = do 
                                     op <- parseOpCode
                                     _ <- manyTill anyChar (option ',' (char ',' <|> char '\n'))
                                     readPos <- pos $ posNum op
                                     return $ opCode op $ map (read :: String -> Int) readPos
                                     where 
-                                        posNum "01" = 3
-                                        posNum "02" = 3
-                                        posNum "03" = 1
-                                        posNum "04" = 1
+                                        posNum "1" = 3
+                                        posNum "2" = 3
+                                        posNum "3" = 1
+                                        posNum "4" = 1
                                         posNum _ = 0
                                                     
                                         
                                         
 
 pos :: Stream s m Char => Int -> ParsecT s u m [String]
-pos n = count n (many digit <* (char ',' <|> char '\n'))
+pos n = count n ((:) <$> option '0' (char '-') <*> many digit <* (char ',' <|> char '\n'))
 
 
 modes :: Char -> Mode
@@ -111,9 +113,9 @@ modes _ = Pointer
 
 
 opCode :: String -> [Int] -> Operation
-opCode "01" xs = Sum (head xs) (xs !! 1) (xs !! 2)
-opCode "02" xs = Prod (head xs) (xs !! 1) (xs !! 2)
-opCode "03" xs = Input (head xs)
-opCode "04" xs = Output (head xs)
+opCode "1" xs = Sum (head xs) (xs !! 1) (xs !! 2)
+opCode "2" xs = Prod (head xs) (xs !! 1) (xs !! 2)
+opCode "3" xs = Input (head xs)
+opCode "4" xs = Output (head xs)
 opCode "99" _ = Halt
 opCode _ _ = error "unrecognized"
