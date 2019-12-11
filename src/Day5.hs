@@ -25,20 +25,36 @@ execute :: [Int] -> [Instruction] -> IO ()
 execute s ins = print ins
 
 
-exec :: Instruction -> [Int] -> [Int]
+exec :: Instruction -> [Int] -> IO [Int]
 exec (Instruction m o@Sum{}) = execSum m o
 exec (Instruction m o@Prod{}) = execProd m o
 exec (Instruction m o@Input{}) = execInput m o
 exec (Instruction m o@Output{}) = execOutput m o
-exec _ = id
+exec _ = return
 
 
-execSum :: [Mode] -> Operation -> [Int] -> [Int]
-execSum = undefined
+execSum :: [Mode] -> Operation -> [Int] -> IO [Int]
+execSum ms (Sum a b c) xs = return $ setValue c (s0 + s1) xs
+                    where 
+                        s0 = getValue (readMode ms 0) xs a
+                        s1 = getValue (readMode ms 1) xs b
 
-execProd = undefined
-execInput = undefined
-execOutput = undefined
+execProd :: [Mode] -> Operation -> [Int] -> IO [Int]
+execProd ms (Prod a b c) xs = return $ setValue c (p0 * p1) xs
+                        where 
+                            p0 = getValue (readMode ms 0) xs a
+                            p1 = getValue (readMode ms 1) xs b
+
+execInput :: [Mode] -> Operation -> [Int] -> IO [Int]
+execInput ms (Input a) xs = do
+                            val <- readLn
+                            return $ setValue a val xs
+
+execOutput :: [Mode] -> Operation -> [Int] -> IO [Int]
+execOutput ms (Output a) xs = do
+                            print $ getValue Pointer xs a
+                            return xs
+
 
 readMode :: [Mode] -> Int -> Mode
 readMode [] _ = Pointer
@@ -50,7 +66,7 @@ getValue :: Mode -> [Int] -> Int -> Int
 getValue Immediate _ v = v
 getValue Pointer xs v = xs !! v
 
-setValue :: Int -> a -> [a] -> [a]
+setValue :: Int -> Int -> [Int] -> [Int]
 setValue _ _ [] = []
 setValue n newVal (x:xs)
             | n == 0 = newVal : xs
